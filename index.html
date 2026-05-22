@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Crop Disease Detector</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.3/dist/teachablemachine-image.min.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1 id="app-title">AI Crop Disease Detector</h1>
+            <select id="language-select">
+                <option value="en">English</option>
+                <option value="sw">Swahili</option>
+            </select>
+        </header>
+
+        <main class="main-content">
+            
+            <div class="card camera-box">
+                <video id="webcam" autoplay playsinline muted class="hidden"></video>
+                <img id="image-preview" class="hidden" alt="Crop Preview">
+                
+                <div id="placeholder-text" class="placeholder">
+                    <p>No camera active. Start webcam or upload an image leaf.</p>
+                </div>
+
+                <div id="zoom-container" class="zoom-controls hidden" style="margin-top: 12px; width: 100%; display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; box-sizing: border-box;">
+                    <span style="font-size: 12px; color: #aaa;">🔍 Zoom:</span>
+                    <input type="range" id="zoom-slider" min="1" max="3" step="0.1" value="1" style="flex-grow: 1; accent-color: #2196f3; cursor: pointer;">
+                    <span id="zoom-value" style="font-size: 12px; font-weight: bold; min-width: 25px; text-align: right;">1x</span>
+                </div>
+            </div>
+
+            <div class="card controls">
+                <button id="btn-webcam" class="btn primary">Start Webcam</button>
+                <button id="btn-capture" class="btn secondary hidden">Capture Scan</button>
+                
+                <div class="upload-wrapper">
+                    <label for="file-upload" class="btn tertiary">📁 Upload Image File</label>
+                    <input type="file" id="file-upload" accept="image/*" style="display:none;">
+                </div>
+
+                <hr>
+
+                <div class="results-panel">
+                    <h3>Result / Matokeo</h3>
+                    <div id="status">Loading AI Engine...</div>
+                    <div id="prediction-result" class="prediction hidden">
+                        <p><strong>Disease:</strong> <span id="disease-name">-</span></p>
+                        <p><strong>Confidence:</strong> <span id="confidence-level">-</span></p>
+                        
+                        <div id="treatment-box" style="margin-top: 15px; border-top: 1px solid #333; padding-top: 10px;">
+                            <p>🌿 <strong id="lbl-organic">Organic Treatment:</strong> <span id="treatment-organic">-</span></p>
+                            <p>🧪 <strong id="lbl-chemical">Chemical Option:</strong> <span id="treatment-chemical">-</span></p>
+                            <p>🛡️ <strong id="lbl-prevention">Prevention:</strong> <span id="treatment-prevention">-</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="results-panel" style="margin-top: 10px; border-left: 4px solid #2196f3; width: 100%; box-sizing: border-box;">
+                    <h3 id="lbl-history" style="margin-top:0;">Scan History</h3>
+                    <button id="btn-clear-history" class="btn" style="background: #cf6679; color: white; padding: 4px 8px; font-size: 11px; margin-bottom: 10px; border-radius:4px;">Clear History</button>
+                    <div id="history-list" style="max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                        </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="db.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

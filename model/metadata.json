@@ -1,0 +1,1 @@
+{"tfjsVersion":"1.7.4","tmVersion":"2.4.14","packageVersion":"0.8.4-alpha2","packageName":"@teachablemachine/image","timeStamp":"2026-05-22T17:46:17.414Z","userMetadata":{},"modelName":"tm-my-image-model","labels":["tomato_late_blight","tomato_early_blight","potato_early_blight","potato_late_blight"],"imageSize":224}
