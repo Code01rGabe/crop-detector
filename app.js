@@ -1,3 +1,6 @@
+// ==========================================================================
+// 1. COMPONENT DOM ACCESSORS & HANDLES
+// ==========================================================================
 const webcamElement = document.getElementById('webcam');
 const imagePreview = document.getElementById('image-preview');
 const placeholderText = document.getElementById('placeholder-text');
@@ -17,7 +20,6 @@ const processingCanvas = document.getElementById('processing-canvas');
 const locationDisplay = document.getElementById('location-display');
 const btnExportReport = document.getElementById('btn-export-report');
 
-// Option 2 & 3 Accessors
 const searchHistoryInput = document.getElementById('search-history');
 const analyticsContainer = document.getElementById('analytics-chart-container');
 
@@ -27,12 +29,14 @@ let currentLanguage = 'en';
 let currentDetectedDisease = ''; 
 let db = null;
 let videoTrack = null;
-let currentGPS = "Not Available";
-let allCachedScans = []; // Local reference array to manage rapid search operations without querying disk constantly
+let currentGPS = "Nairobi, KE";
+let allCachedScans = []; 
 
 const MODEL_URL = "./model/";
 
-// 1. Core Boot Execution
+// ==========================================================================
+// 2. LIFECYCLE BOOT LOOPS
+// ==========================================================================
 async function initApp() {
     try {
         updateLanguageUI();
@@ -42,36 +46,36 @@ async function initApp() {
         statusDiv.innerText = diseaseDatabase[currentLanguage]["ready"];
         fetchCoordinates();
     } catch (error) {
-        statusDiv.innerText = "Model loading paused. Scan records are still operational offline.";
-        console.error("Model loading issue:", error);
+        statusDiv.innerText = "Console Engine Offline";
     }
 }
 
-// 2. Geolocation Processing
 function fetchCoordinates() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 currentGPS = `${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`;
-                locationDisplay.innerText = `${currentLanguage === 'en' ? 'Location' : 'Mahali'}: ${currentGPS}`;
+                if (locationDisplay) locationDisplay.innerText = currentGPS;
             },
             (error) => {
-                currentGPS = "Offline/Protected";
-                locationDisplay.innerText = `${currentLanguage === 'en' ? 'Location' : 'Mahali'}: ${currentGPS}`;
+                currentGPS = "Nairobi, KE";
+                if (locationDisplay) locationDisplay.innerText = currentGPS;
             },
             { enableHighAccuracy: true, timeout: 10000 }
         );
     }
 }
 
-// 3. Local IndexedDB Setup
+// ==========================================================================
+// 3. PERSISTENT TRANSACTION LAYERS (INDEXEDDB)
+// ==========================================================================
 function initDatabase() {
     const request = indexedDB.open("CropDetectorDB", 1);
-    request.onupgradeneeded = (event) => {
-        event.target.result.createObjectStore("scans", { keyPath: "id", autoIncrement: true });
+    request.onupgradeneeded = (e) => {
+        e.target.result.createObjectStore("scans", { keyPath: "id", autoIncrement: true });
     };
-    request.onsuccess = (event) => {
-        db = event.target.result;
+    request.onsuccess = (e) => {
+        db = e.target.result;
         loadHistoryFromDB();
     };
 }
@@ -92,14 +96,11 @@ function saveScanToDB(diseaseKey, confidenceValue) {
     transaction.oncomplete = () => loadHistoryFromDB();
 }
 
-// 4. Extract Records & Compute Option 2 (Analytics) & Option 3 (Fuzzy Engine)
 function loadHistoryFromDB() {
     if (!db) return;
-
-    allCachedScans = []; // Wipe internal registry cache
+    allCachedScans = []; 
     const transaction = db.transaction(["scans"], "readonly");
-    const store = transaction.objectStore("scans");
-    const request = store.openCursor(null, "prev");
+    const request = transaction.objectStore("scans").openCursor(null, "prev");
 
     request.onsuccess = (event) => {
         const cursor = event.target.result;
@@ -107,19 +108,43 @@ function loadHistoryFromDB() {
             allCachedScans.push(cursor.value);
             cursor.continue();
         } else {
-            // Cursor run complete! Render UI layouts from memory cache arrays
             renderHistoryCards(allCachedScans);
             calculateAnalytics(allCachedScans);
         }
     };
 }
 
-// Option 3 Modular Renderer handles list compilation matching dynamic filter inputs
+// ==========================================================================
+// 4. UI COMPONENT COMPILERS & RENDERERS
+// ==========================================================================
+function displayResult(diseaseKey, confidenceValue) {
+    const data = diseaseDatabase[currentLanguage]["diseases"][diseaseKey] || {
+        "name": diseaseKey.replace(/_/g, ' '),
+        "organic": "No systemic documentation written.",
+        "chemical": "No chemical compounds assigned.",
+        "prevention": "No preventative guidelines loaded."
+    };
+    
+    document.getElementById('prediction-result').classList.remove('hidden');
+    document.getElementById('disease-name').innerText = data.name.toUpperCase();
+    document.getElementById('confidence-level').innerText = confidenceValue;
+    
+    const numericScore = parseFloat(confidenceValue);
+    const ringFill = document.getElementById('ring-progress-fill');
+    if (ringFill && !isNaN(numericScore)) {
+        ringFill.setAttribute('stroke-dasharray', `${numericScore}, 100`);
+    }
+
+    if (locationDisplay) locationDisplay.innerText = currentGPS;
+    document.getElementById('treatment-organic').innerText = data.organic;
+    document.getElementById('treatment-chemical').innerText = data.chemical;
+    document.getElementById('treatment-prevention').innerText = data.prevention;
+}
+
 function renderHistoryCards(scanArray) {
     historyList.innerHTML = "";
-    
     if (scanArray.length === 0) {
-        historyList.innerHTML = `<p style="color:#666; font-size:12px; margin:0;">${currentLanguage === 'en' ? 'No matching records found.' : 'Hakuna rekodi zilizopatikana.'}</p>`;
+        historyList.innerHTML = `<p style="color:var(--text-secondary); font-size:12px; margin:0; padding:12px; text-align:center;">${currentLanguage === 'en' ? 'Registry empty.' : 'Hakuna kumbukumbu.'}</p>`;
         return;
     }
 
@@ -128,20 +153,20 @@ function renderHistoryCards(scanArray) {
         const savedGPS = entry.coordinates || "N/A";
         
         const logCard = document.createElement("div");
-        logCard.style.cssText = "background: #252525; padding: 10px; border-radius: 6px; font-size: 13px; border-left: 3px solid #2196f3; display: flex; flex-direction: column; cursor: pointer; transition: background 0.2s;";
+        logCard.className = "ledger-entry-row";
         logCard.setAttribute('data-key', entry.diseaseKey);
         logCard.setAttribute('data-confidence', entry.confidence);
         logCard.setAttribute('data-gps', savedGPS);
         
         logCard.innerHTML = `
-            <div style="display: flex; justify-content: space-between; font-weight: bold; color: #fff; pointer-events: none;">
-                <span>${data.name}</span>
-                <span style="color: #4caf50;">${entry.confidence}</span>
+            <div class="ledger-meta">
+                <span class="ledger-title">${data.name}</span>
+                <div class="ledger-sub">
+                    <span>📅 ${entry.timestamp.split(',')[0]}</span>
+                    <span>📍 ${savedGPS}</span>
+                </div>
             </div>
-            <div style="display: flex; justify-content: space-between; color: #777; font-size: 10px; margin-top: 4px; pointer-events: none;">
-                <span>📅 ${entry.timestamp}</span>
-                <span>📍 ${savedGPS}</span>
-            </div>
+            <span class="ledger-pct">${entry.confidence}</span>
         `;
         
         logCard.addEventListener('click', (e) => {
@@ -152,63 +177,51 @@ function renderHistoryCards(scanArray) {
             currentGPS = targetGPS;
             displayResult(targetKey, targetConfidence);
         });
-
-        logCard.addEventListener('mouseenter', () => logCard.style.background = "#2e2e2e");
-        logCard.addEventListener('mouseleave', () => logCard.style.background = "#252525");
-
         historyList.appendChild(logCard);
     });
 }
 
-// Option 3 Fuzzy Event Listener updates display dynamically on keyboard inputs
-searchHistoryInput.addEventListener('input', (e) => {
-    const query = e.target.value.toLowerCase().trim();
-    
-    const filteredResults = allCachedScans.filter(entry => {
-        const data = diseaseDatabase[currentLanguage]["diseases"][entry.diseaseKey] || { name: entry.diseaseKey.replace(/_/g, ' ') };
-        const matchDisease = data.name.toLowerCase().includes(query);
-        const matchGPS = (entry.coordinates || "").toLowerCase().includes(query);
-        const matchTime = entry.timestamp.toLowerCase().includes(query);
-        return matchDisease || matchGPS || matchTime;
-    });
-
-    renderHistoryCards(filteredResults);
-});
-
-// Option 2 Metrics Loop: Tallies aggregate values and builds clean inline progress bars
 function calculateAnalytics(scanArray) {
     analyticsContainer.innerHTML = "";
     if (scanArray.length === 0) {
-        analyticsContainer.innerHTML = `<p style="color:#666; font-size:12px; margin:0;">${currentLanguage === 'en' ? 'Scan fields to compile trend charts.' : 'Piga picha ili kuona takwimu.'}</p>`;
+        analyticsContainer.innerHTML = `<p style="color:var(--text-secondary); font-size:12px; margin:0;">${currentLanguage === 'en' ? 'Awaiting scan registers.' : 'Piga picha ili kuona takwimu.'}</p>`;
         return;
     }
 
     const counts = {};
-    scanArray.forEach(entry => {
-        counts[entry.diseaseKey] = (counts[entry.diseaseKey] || 0) + 1;
-    });
-
+    scanArray.forEach(entry => { counts[entry.diseaseKey] = (counts[entry.diseaseKey] || 0) + 1; });
     const totalScans = scanArray.length;
 
-    // Loop through aggregates and append styled layout bars directly
     for (const [key, val] of Object.entries(counts)) {
         const data = diseaseDatabase[currentLanguage]["diseases"][key] || { name: key.replace(/_/g, ' ') };
         const percentageWidth = ((val / totalScans) * 100).toFixed(0);
 
         const chartRow = document.createElement("div");
-        chartRow.style.cssText = "display: flex; flex-direction: column; gap: 4px; font-size: 12px;";
+        chartRow.className = "analytics-bar-row";
         chartRow.innerHTML = `
-            <div style="display: flex; justify-content: space-between; color: #ccc;">
+            <div class="analytics-row-meta">
                 <span>${data.name}</span>
-                <span style="font-weight:bold; color:#4caf50;">${val} (${percentageWidth}%)</span>
+                <span class="metric-count">${val} (${percentageWidth}%)</span>
             </div>
-            <div style="width: 100%; background: #222; height: 8px; border-radius: 4px; overflow: hidden;">
-                <div style="width: ${percentageWidth}%; background: #4caf50; height: 100%; border-radius: 4px; transition: width 0.5s ease-out;"></div>
+            <div class="bar-track-bg">
+                <div class="bar-fill-progress" style="width: ${percentageWidth}%;"></div>
             </div>
         `;
         analyticsContainer.appendChild(chartRow);
     }
 }
+
+// ==========================================================================
+// 5. LEDGER TRANSACTIONS FILTERS & CONFIGS
+// ==========================================================================
+searchHistoryInput.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    const filtered = allCachedScans.filter(entry => {
+        const data = diseaseDatabase[currentLanguage]["diseases"][entry.diseaseKey] || { name: entry.diseaseKey.replace(/_/g, ' ') };
+        return data.name.toLowerCase().includes(query) || (entry.coordinates || "").toLowerCase().includes(query);
+    });
+    renderHistoryCards(filtered);
+});
 
 btnClearHistory.addEventListener('click', () => {
     if (!db) return;
@@ -217,12 +230,13 @@ btnClearHistory.addEventListener('click', () => {
     transaction.oncomplete = () => loadHistoryFromDB();
 });
 
-// 5. Localization & Framework Updates
+// ==========================================================================
+// 6. MULTILINGUAL PROTOCOL SWITCHER
+// ==========================================================================
 langSelect.addEventListener('change', (e) => {
     currentLanguage = e.target.value;
     updateLanguageUI();
     loadHistoryFromDB(); 
-    locationDisplay.innerText = `${currentLanguage === 'en' ? 'Location' : 'Mahali'}: ${currentGPS}`;
     if (currentDetectedDisease) {
         displayResult(currentDetectedDisease, document.getElementById('confidence-level').innerText);
     }
@@ -230,32 +244,26 @@ langSelect.addEventListener('change', (e) => {
 
 function updateLanguageUI() {
     const isSw = currentLanguage === 'sw';
-    document.getElementById('app-title').innerText = isSw ? "AI Kichunguzi cha Magonjwa ya Mimea" : "AI Crop Disease Detector";
-    document.getElementById('lbl-organic').innerText = isSw ? "Tiba ya Kiasili:" : "Organic Treatment:";
-    document.getElementById('lbl-chemical').innerText = isSw ? "Chaguo la Kemikali:" : "Chemical Option:";
-    document.getElementById('lbl-prevention').innerText = isSw ? "Kinga:" : "Prevention:";
-    document.getElementById('lbl-history').innerText = isSw ? "Historia ya Vipimo" : "Scan History";
-    document.getElementById('lbl-analytics').innerText = isSw ? "Takwimu za Mazao" : "Crop Health Trends";
-    searchHistoryInput.placeholder = isSw ? "🔍 Tafuta kwa ugonjwa au mahali..." : "🔍 Search by disease or location...";
-    btnExportReport.innerText = isSw ? "📋 Nakili Ripoti ya WhatsApp" : "📋 Copy WhatsApp Field Report";
+    document.getElementById('lbl-history').innerText = isSw ? "Historia ya Vipimo" : "Metrics & Analytics Deck";
+    searchHistoryInput.placeholder = isSw ? "Chuja kumbukumbu..." : "search by disease or coordinates";
+    btnExportReport.innerText = isSw ? "Nakili Ripoti ya WhatsApp" : "Copy WhatsApp Field Report";
     btnClearHistory.innerText = isSw ? "Futa Historia" : "Clear History";
-    if(model && (statusDiv.innerText.includes("Ready") || statusDiv.innerText.includes("Tayari"))) {
-        statusDiv.innerText = diseaseDatabase[currentLanguage]["ready"];
-    }
 }
 
-// 6. Camera Stream Handling & Zoom Controls
+// ==========================================================================
+// 7. VIDEO STREAMS & OPTICAL FOCUS MANAGEMENT
+// ==========================================================================
 btnWebcam.addEventListener('click', async () => {
     if (stream) { stopWebcam(); return; }
     try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
         webcamElement.srcObject = stream;
         webcamElement.classList.remove('hidden');
         imagePreview.classList.add('hidden');
         placeholderText.classList.add('hidden');
         btnCapture.classList.remove('hidden');
         btnWebcam.innerText = currentLanguage === 'en' ? "Stop Webcam" : "Zima Kamera";
-        btnWebcam.style.backgroundColor = "#f44336";
+        btnWebcam.className = "btn btn-glass";
 
         videoTrack = stream.getVideoTracks()[0];
         const capabilities = videoTrack.getCapabilities ? videoTrack.getCapabilities() : {};
@@ -268,7 +276,7 @@ btnWebcam.addEventListener('click', async () => {
             zoomValueDisplay.innerText = Number(zoomSlider.value).toFixed(1) + "x";
         }
     } catch (err) {
-        alert("Camera access failed. Please utilize the standard File Upload instead.");
+        alert("Camera sensor connection isolated.");
     }
 });
 
@@ -285,8 +293,8 @@ function stopWebcam() {
     placeholderText.classList.remove('hidden');
     btnCapture.classList.add('hidden');
     zoomContainer.classList.add('hidden'); 
-    btnWebcam.innerText = currentLanguage === 'en' ? "Start Webcam" : "Washa Kamera";
-    btnWebcam.style.backgroundColor = "#4caf50";
+    btnWebcam.innerText = currentLanguage === 'en' ? "Washa Kamera / Start Webcam" : "Washa Kamera";
+    btnWebcam.className = "btn btn-blue";
 }
 
 fileUpload.addEventListener('change', (event) => {
@@ -306,7 +314,9 @@ fileUpload.addEventListener('change', (event) => {
 
 btnCapture.addEventListener('click', () => runInference(webcamElement));
 
-// 7. Core TensorFlow.js Inference & Option 1 Canvas Manipulation
+// ==========================================================================
+// 8. IMAGE INFERENCE PROCESSING PIXEL INTERCEPTOR
+// ==========================================================================
 async function runInference(inputElement) {
     if (!model) return;
     statusDiv.innerText = diseaseDatabase[currentLanguage]["scanning"];
@@ -317,14 +327,13 @@ async function runInference(inputElement) {
     processingCanvas.height = inputElement.videoHeight || inputElement.naturalHeight || 224;
     ctx.drawImage(inputElement, 0, 0, processingCanvas.width, processingCanvas.height);
     
-    // Canvas Pre-Processing Filter execution matrix
     const imageData = ctx.getImageData(0, 0, processingCanvas.width, processingCanvas.height);
-    const d = imageData.data;
+    const pixels = imageData.data;
     const contrastFactor = 1.32; 
-    for (let i = 0; i < d.length; i += 4) {
-        d[i]     = contrastFactor * (d[i] - 128) + 128;     
-        d[i + 1] = contrastFactor * (d[i + 1] - 128) + 128; 
-        d[i + 2] = contrastFactor * (d[i + 2] - 128) + 128; 
+    for (let i = 0; i < pixels.length; i += 4) {
+        pixels[i]     = contrastFactor * (pixels[i] - 128) + 128;     
+        pixels[i + 1] = contrastFactor * (pixels[i + 1] - 128) + 128; 
+        pixels[i + 2] = contrastFactor * (pixels[i + 2] - 128) + 128; 
     }
     ctx.putImageData(imageData, 0, 0);
 
@@ -334,7 +343,7 @@ async function runInference(inputElement) {
         if (prediction[i].probability > highestPrediction.probability) { highestPrediction = prediction[i]; }
     }
     
-    const confidencePercentage = (highestPrediction.probability * 100).toFixed(1) + "%";
+    const confidencePercentage = (highestPrediction.probability * 100).toFixed(0) + "%";
     currentDetectedDisease = highestPrediction.className; 
     
     statusDiv.innerText = diseaseDatabase[currentLanguage]["scan_complete"];
@@ -342,22 +351,9 @@ async function runInference(inputElement) {
     saveScanToDB(currentDetectedDisease, confidencePercentage);
 }
 
-function displayResult(diseaseKey, confidenceValue) {
-    const data = diseaseDatabase[currentLanguage]["diseases"][diseaseKey] || {
-        "name": diseaseKey.replace(/_/g, ' '),
-        "organic": "No organic guidelines stored.",
-        "chemical": "No chemical records matched.",
-        "prevention": "No preventative mapping fields present."
-    };
-    document.getElementById('prediction-result').classList.remove('hidden');
-    document.getElementById('disease-name').innerText = data.name;
-    document.getElementById('confidence-level').innerText = confidenceValue;
-    locationDisplay.innerText = `${currentLanguage === 'en' ? 'Location' : 'Mahali'}: ${currentGPS}`;
-    document.getElementById('treatment-organic').innerText = data.organic;
-    document.getElementById('treatment-chemical').innerText = data.chemical;
-    document.getElementById('treatment-prevention').innerText = data.prevention;
-}
-
+// ==========================================================================
+// 9. RE-EXPORT FIELD LOGS (WHATSAPP OUTBOUND SHUTTLE)
+// ==========================================================================
 btnExportReport.addEventListener('click', () => {
     const dName = document.getElementById('disease-name').innerText;
     const cLevel = document.getElementById('confidence-level').innerText;
@@ -386,11 +382,25 @@ _Generated securely completely offline via MimeaHub AI Client App._`;
 
     navigator.clipboard.writeText(textReportTemplate).then(() => {
         const oldText = btnExportReport.innerText;
-        btnExportReport.innerText = currentLanguage === 'en' ? "✅ Copied to Clipboard!" : "✅ Imesikitishwa!";
-        btnExportReport.style.background = "#2196f3";
-        setTimeout(() => { btnExportReport.innerText = oldText; btnExportReport.style.background = "#4caf50"; }, 2000);
+        btnExportReport.innerText = "✅ Report Saved to Clipboard!";
+        setTimeout(() => { btnExportReport.innerText = oldText; }, 2000);
     });
 });
 
+// ==========================================================================
+// 10. LIGHT/DARK MATRIX PERSISTENCE
+// ==========================================================================
+const themeToggleBtn = document.getElementById('theme-toggle');
+const savedTheme = localStorage.getItem('mimeahub-theme') || 'dark';
+document.documentElement.setAttribute('data-theme', savedTheme);
+
+themeToggleBtn.addEventListener('click', () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('mimeahub-theme', newTheme);
+});
+
+// Start Apps
 initDatabase();
 initApp();

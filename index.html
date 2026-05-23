@@ -1,90 +1,167 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Crop Disease Detector</title>
+    <title>MimeaHub — Tactical Edge Diagnostics</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.3/dist/teachablemachine-image.min.js"></script>
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <h1 id="app-title">AI Crop Disease Detector</h1>
-            <select id="language-select">
-                <option value="en">English</option>
-                <option value="sw">Swahili</option>
-            </select>
+    <div class="dashboard-shell">
+        
+        <header class="app-navbar">
+            <div class="nav-brand">
+                <svg class="brand-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 22C2 13 6 4 14 2C14 2 13 7 8 11C18 10 22 16 22 22C13 22 2 22 2 22Z" fill="url(#leaf-gradient)"/>
+                    <defs>
+                        <linearGradient id="leaf-gradient" x1="2" y1="22" x2="22" y2="2" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#38bdf8"/>
+                            <stop offset="1" stop-color="#34d399"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="brand-details">
+                    <h1>MimeaHub</h1>
+                    <p>v4.0-Edge | Decentralized Vision</p>
+                </div>
+            </div>
+            
+            <div class="nav-actions">
+                <button id="theme-toggle" class="theme-pill" aria-label="Toggle Theme">
+                    <span class="icon-light">☀️</span>
+                    <span class="icon-dark">🌙</span>
+                </button>
+                <select id="language-select" class="lang-pill">
+                    <option value="en">EN</option>
+                    <option value="sw">SW</option>
+                </select>
+                <div class="notification-bell">🔔</div>
+            </div>
         </header>
 
-        <main class="main-content">
+        <main class="console-grid">
             
-            <div class="card camera-box">
-                <video id="webcam" autoplay playsinline muted class="hidden"></video>
-                <img id="image-preview" class="hidden" alt="Crop Preview">
-                <canvas id="processing-canvas" class="hidden"></canvas>
+            <section class="card vision-deck">
+                <h3 class="panel-title">Vision Control Deck</h3>
                 
-                <div id="placeholder-text" class="placeholder">
-                    <p>No camera active. Start webcam or upload an image leaf.</p>
+                <div class="viewport-wrapper">
+                    <div class="camera-hud-reticle"></div>
+                    <div class="camera-scan-line"></div>
+                    <div class="camera-corner-brackets"></div>
+                    
+                    <video id="webcam" autoplay playsinline muted class="hidden"></video>
+                    <img id="image-preview" class="hidden" alt="Crop Preview">
+                    <canvas id="processing-canvas" class="hidden"></canvas>
+                    
+                    <div id="placeholder-text" class="stage-placeholder">
+                        <span class="pulse-radar"></span>
+                        <p>Camera inactive. Ready to stream live video feeds or analyze file asset uploads.</p>
+                    </div>
                 </div>
 
-                <div id="zoom-container" class="zoom-controls hidden" style="margin-top: 12px; width: 100%; display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; box-sizing: border-box;">
-                    <span style="font-size: 12px; color: #aaa;">🔍 Zoom:</span>
-                    <input type="range" id="zoom-slider" min="1" max="3" step="0.1" value="1" style="flex-grow: 1; accent-color: #2196f3; cursor: pointer;">
-                    <span id="zoom-value" style="font-size: 12px; font-weight: bold; min-width: 25px; text-align: right;">1x</span>
+                <div id="zoom-container" class="digital-zoom-bar hidden">
+                    <div class="zoom-meta">
+                        <span>Digital Zoom</span>
+                        <span id="zoom-value" class="mono">1.0x</span>
+                    </div>
+                    <input type="range" id="zoom-slider" min="1" max="3" step="0.1" value="1" class="custom-slider">
                 </div>
-            </div>
 
-            <div class="card controls">
-                <button id="btn-webcam" class="btn primary">Start Webcam</button>
-                <button id="btn-capture" class="btn secondary hidden">Capture Scan</button>
+                <div class="button-deck">
+                    <button id="btn-webcam" class="btn btn-blue">Washa Kamera / Start Webcam</button>
+                    <button id="btn-capture" class="btn btn-green hidden">Run Diagnostic Scan</button>
+                    
+                    <div class="file-trigger">
+                        <label for="file-upload" class="btn btn-glass">Analyze File Upload</label>
+                        <input type="file" id="file-upload" accept="image/*" style="display:none;">
+                    </div>
+                </div>
+            </section>
+
+            <section class="card report-engine glow-blue">
+                <h3 class="panel-title">Report Engine</h3>
+                <div id="status" class="engine-status-pulse">Engine Online</div>
                 
-                <div class="upload-wrapper">
-                    <label for="file-upload" class="btn tertiary">📁 Upload Image File</label>
-                    <input type="file" id="file-upload" accept="image/*" style="display:none;">
-                </div>
+                <div id="prediction-result" class="report-view-stack">
+                    <div class="hero-diagnosis-box">
+                        <div class="diagnosis-text">
+                            <span class="subtext-caps">Diagnosis:</span>
+                            <h2 id="disease-name">TOMATO BLIGHT</h2>
+                        </div>
+                        <div class="radial-progress-container">
+                            <svg class="radial-svg" viewBox="0 0 36 36">
+                                <path class="radial-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path id="ring-progress-fill" class="radial-fill" stroke-dasharray="79, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            </svg>
+                            <div id="confidence-level" class="radial-percentage mono">79%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="location-row">
+                        <span class="geo-badge">📍 <span id="location-display">Nairobi, KE</span></span>
+                    </div>
 
-                <hr>
-
-                <div class="results-panel">
-                    <h3>Result / Matokeo</h3>
-                    <div id="status">Loading AI Engine...</div>
-                    <div id="prediction-result" class="prediction hidden">
-                        <p><strong>Disease:</strong> <span id="disease-name">-</span></p>
-                        <p><strong>Confidence:</strong> <span id="confidence-level">-</span></p>
-                        <p style="font-size: 12px; color: #aaa;">📍 <span id="location-display">Location: Fetching GPS...</span></p>
+                    <div class="treatment-protocols">
+                        <h4>Treatments</h4>
                         
-                        <div id="treatment-box" style="margin-top: 15px; border-top: 1px solid #333; padding-top: 10px;">
-                            <p>🌿 <strong id="lbl-organic">Organic Treatment:</strong> <span id="treatment-organic">-</span></p>
-                            <p>🧪 <strong id="lbl-chemical">Chemical Option:</strong> <span id="treatment-chemical">-</span></p>
-                            <p>🛡️ <strong id="lbl-prevention">Prevention:</strong> <span id="treatment-prevention">-</span></p>
+                        <div class="rx-strip organic-strip">
+                            <div class="rx-indicator"></div>
+                            <div class="rx-body">
+                                <h5>Organic</h5>
+                                <p id="treatment-organic">Apply copper-based fungicides early in the morning cycle.</p>
+                            </div>
                         </div>
-
-                        <button id="btn-export-report" class="btn" style="background: #4caf50; color: white; margin-top: 12px; width: 100%; font-size: 13px; font-weight: bold; border-radius: 6px;">📋 Copy WhatsApp Field Report</button>
+                        
+                        <div class="rx-strip chemical-strip">
+                            <div class="rx-indicator"></div>
+                            <div class="rx-body">
+                                <h5>Chemical</h5>
+                                <p id="treatment-chemical">Utilize chlorothalonil applications matching local guidelines.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="rx-strip prevention-strip">
+                            <div class="rx-indicator"></div>
+                            <div class="rx-body">
+                                <h5>Prevention</h5>
+                                <p id="treatment-prevention">Ensure clean air circulation space and manage lower leaf trimming.</p>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="results-panel" style="margin-top: 10px; border-left: 4px solid #2196f3; width: 100%; box-sizing: border-box;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <h3 id="lbl-history" style="margin:0;">Scan History</h3>
-                        <button id="btn-clear-history" class="btn" style="background: #cf6679; color: white; padding: 4px 8px; font-size: 11px; border-radius:4px; margin:0;">Clear History</button>
+                    <button id="btn-export-report" class="btn-action-whatsapp">Copy WhatsApp Field Report</button>
+                </div>
+            </section>
+
+            <section class="column-right-stack">
+                
+                <div class="card history-card glow-green">
+                    <div class="history-header">
+                        <h3 id="lbl-history" class="panel-title" style="margin: 0;">Metrics & Analytics Deck</h3>
+                        <button id="btn-clear-history" class="btn-wipe">Clear History</button>
                     </div>
                     
-                    <input type="text" id="search-history" placeholder="🔍 Search by disease or location..." style="width: 100%; padding: 8px; margin-bottom: 10px; background: #1e1e1e; border: 1px solid #333; border-radius: 4px; color: white; box-sizing: border-box; font-size: 13px;">
+                    <h4 class="mini-section-title">Transactional History</h4>
+                    <input type="text" id="search-history" class="console-search" placeholder="search by disease or coordinates">
                     
-                    <div id="history-list" style="max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                    <div id="history-list" class="ledger-scroller">
                         </div>
                 </div>
 
-                <div class="results-panel" style="margin-top: 10px; border-left: 4px solid #4caf50; width: 100%; box-sizing: border-box;">
-                    <h3 id="lbl-analytics" style="margin-top:0; margin-bottom: 10px;">Crop Health Trends</h3>
-                    <div id="analytics-chart-container" style="display: flex; flex-direction: column; gap: 8px;">
+                <div class="card analytics-card">
+                    <h3 id="lbl-analytics" class="panel-title">Macro Analytics</h3>
+                    <div id="analytics-chart-container" class="chart-bars-stack">
                         </div>
                 </div>
 
-            </div>
+            </section>
+
         </main>
     </div>
 
