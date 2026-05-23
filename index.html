@@ -25,6 +25,8 @@
                 <video id="webcam" autoplay playsinline muted class="hidden"></video>
                 <img id="image-preview" class="hidden" alt="Crop Preview">
                 
+                <canvas id="processing-canvas" class="hidden"></canvas>
+                
                 <div id="placeholder-text" class="placeholder">
                     <p>No camera active. Start webcam or upload an image leaf.</p>
                 </div>
@@ -53,12 +55,15 @@
                     <div id="prediction-result" class="prediction hidden">
                         <p><strong>Disease:</strong> <span id="disease-name">-</span></p>
                         <p><strong>Confidence:</strong> <span id="confidence-level">-</span></p>
+                        <p style="font-size: 12px; color: #aaa;">📍 <span id="location-display">Location: Fetching GPS...</span></p>
                         
                         <div id="treatment-box" style="margin-top: 15px; border-top: 1px solid #333; padding-top: 10px;">
                             <p>🌿 <strong id="lbl-organic">Organic Treatment:</strong> <span id="treatment-organic">-</span></p>
                             <p>🧪 <strong id="lbl-chemical">Chemical Option:</strong> <span id="treatment-chemical">-</span></p>
                             <p>🛡️ <strong id="lbl-prevention">Prevention:</strong> <span id="treatment-prevention">-</span></p>
                         </div>
+
+                        <button id="btn-export-report" class="btn" style="background: #4caf50; color: white; margin-top: 12px; width: 100%; font-size: 13px; font-weight: bold; border-radius: 6px;">📋 Copy WhatsApp Field Report</button>
                     </div>
                 </div>
 
