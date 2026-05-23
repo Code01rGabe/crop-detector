@@ -153,7 +153,8 @@ function loadHistoryFromDB() {
             logCard.addEventListener('mouseenter', () => logCard.style.background = "#2e2e2e");
             logCard.addEventListener('mouseleave', () => logCard.style.background = "#252525");
 
-            historyList.appendChild(cursor.continue());
+            historyList.appendChild(logCard);
+            cursor.continue();
         } else if (historyList.innerHTML === "") {
             historyList.innerHTML = `<p style="color:#666; font-size:12px; margin:0;">${currentLanguage === 'en' ? 'No recent records.' : 'Hakuna rekodi hivi karibuni.'}</p>`;
         }
